@@ -1,17 +1,81 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { scanNutritionLabel } from '../services/api';
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
+const readFileAsDataUrl = (file) => (
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
+    reader.readAsDataURL(file);
+  })
+);
 
 export default function Scan() {
   const navigate = useNavigate();
+  const uploadInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [error, setError] = useState('');
 
-  const handleScan = () => {
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError('');
+
+    if (!file.type.startsWith('image/')) {
+      setSelectedFile(null);
+      setPreviewUrl('');
+      setError('File harus berupa gambar.');
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setSelectedFile(null);
+      setPreviewUrl('');
+      setError('Ukuran gambar maksimal 10MB.');
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setSelectedFile(file);
+      setPreviewUrl(dataUrl);
+    } catch (readError) {
+      setSelectedFile(null);
+      setPreviewUrl('');
+      setError(readError.message);
+    }
+  };
+
+  const handleScan = async () => {
+    if (!selectedFile) {
+      setError('Pilih foto label nutrisi terlebih dahulu.');
+      return;
+    }
+
     setLoading(true);
-    // Simulasi proses scanning API ML
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await scanNutritionLabel(selectedFile);
+      navigate('/result', {
+        state: {
+          nutrition: response.data,
+          imagePreview: previewUrl,
+          fileName: selectedFile.name,
+        },
+      });
+    } catch (scanError) {
+      setError(scanError.message);
+    } finally {
       setLoading(false);
-      navigate('/result');
-    }, 2000);
+    }
   };
 
   return (
@@ -27,27 +91,67 @@ export default function Scan() {
         
         {/* Dashed Upload Area */}
         <label className="upload-area-dashed w-full h-64 flex flex-col items-center justify-center gap-stack-md bg-surface-container-low/30 hover:bg-surface-container-low/50 transition-colors cursor-pointer group">
-          <input type="file" className="hidden" accept="image/*" />
-          <div className="w-16 h-16 rounded-full bg-primary-container/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-            <span className="material-symbols-outlined text-[40px]">cloud_upload</span>
-          </div>
-          <div className="text-center">
-            <p className="font-headline-md text-headline-md text-on-surface mb-1">Upload foto label</p>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">Mendukung format JPG, PNG up to 10MB</p>
-          </div>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+          {previewUrl ? (
+            <div className="w-full h-full relative">
+              <img
+                src={previewUrl}
+                alt="Preview label nutrisi"
+                className="w-full h-full object-contain rounded-lg"
+              />
+              <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-white/90 px-4 py-2 text-left shadow-sm">
+                <p className="font-label-bold text-label-bold text-on-surface truncate">{selectedFile?.name}</p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">Klik area ini untuk mengganti gambar</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="w-16 h-16 rounded-full bg-primary-container/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-[40px]">cloud_upload</span>
+              </div>
+              <div className="text-center">
+                <p className="font-headline-md text-headline-md text-on-surface mb-1">Upload foto label</p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">Mendukung format JPG, PNG up to 10MB</p>
+              </div>
+            </>
+          )}
         </label>
 
         {/* Secondary Action: Camera */}
-        <button className="w-full py-4 bg-tertiary-container/30 text-on-tertiary-container font-headline-md text-headline-md flex items-center justify-center gap-2 rounded-xl hover:bg-tertiary-container/50 transition-all active:scale-[0.98]">
+        <input
+          ref={cameraInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+        />
+        <button
+          type="button"
+          onClick={() => cameraInputRef.current?.click()}
+          className="w-full py-4 bg-tertiary-container/30 text-on-tertiary-container font-headline-md text-headline-md flex items-center justify-center gap-2 rounded-xl hover:bg-tertiary-container/50 transition-all active:scale-[0.98]"
+        >
           <span className="material-symbols-outlined">photo_camera</span>
           Foto dengan kamera
         </button>
 
+        {error && (
+          <div className="rounded-lg border border-error/20 bg-error/5 px-4 py-3 text-error font-body-md text-body-md">
+            {error}
+          </div>
+        )}
+
         {/* Primary Execution Button */}
         <button 
           onClick={handleScan}
-          disabled={loading}
-          className={`w-full py-5 bg-primary text-on-primary font-headline-md text-headline-md flex items-center justify-center gap-2 rounded-xl mt-stack-md shadow-lg hover:shadow-xl transition-all ${loading ? 'opacity-70 cursor-wait' : 'hover:bg-primary-container active:scale-95 group'}`}
+          disabled={loading || !selectedFile}
+          className={`w-full py-5 bg-primary text-on-primary font-headline-md text-headline-md flex items-center justify-center gap-2 rounded-xl mt-stack-md shadow-lg hover:shadow-xl transition-all ${loading ? 'opacity-70 cursor-wait' : selectedFile ? 'hover:bg-primary-container active:scale-95 group' : 'opacity-50 cursor-not-allowed'}`}
         >
           {loading ? (
              <span className="material-symbols-outlined animate-spin">refresh</span>
