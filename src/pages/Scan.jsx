@@ -43,46 +43,6 @@ export default function Scan() {
           Foto dengan kamera
         </button>
 
-        {/* User Context Selectors */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-stack-md mt-stack-sm">
-          <div className="flex flex-col gap-1">
-            <label className="font-label-bold text-label-bold text-on-surface-variant ml-1">Jenis Kelamin</label>
-            <div className="relative">
-              <select className="w-full appearance-none bg-surface-container-low border border-outline-variant/50 rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
-                <option>Pilih Jenis Kelamin</option>
-                <option>Laki-laki</option>
-                <option>Perempuan</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="font-label-bold text-label-bold text-on-surface-variant ml-1">Rentang Usia</label>
-            <div className="relative">
-              <select className="w-full appearance-none bg-surface-container-low border border-outline-variant/50 rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
-                <option>Pilih Rentang Usia</option>
-                <option>13 - 18 Tahun</option>
-                <option>19 - 30 Tahun</option>
-                <option>31 - 50 Tahun</option>
-                <option>50+ Tahun</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="font-label-bold text-label-bold text-on-surface-variant ml-1">Tipe Visualisasi</label>
-            <div className="relative">
-              <select className="w-full appearance-none bg-surface-container-low border border-outline-variant/50 rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none">
-                <option>Pilih Visualisasi</option>
-                <option>Ring Chart</option>
-                <option>Bar Chart</option>
-                <option>Detailed List</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">expand_more</span>
-            </div>
-          </div>
-        </div>
-
         {/* Primary Execution Button */}
         <button 
           onClick={handleScan}
